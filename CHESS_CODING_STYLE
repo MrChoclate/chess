@@ -1,0 +1,163 @@
+                            Chess Coding Style
+
+Imported mainly from PEP8 and Google Coding Style.
+
+-------------------------------------------------------------------------------
+
+1-Identation
+
+Identation must be 4-spaces only.
+
+
+2-Maximum line length
+
+Limit all lines to a maximum of 79 characters. The preferred way of wrapping
+long lines is by using Python's implied line continuation inside parentheses,
+brackets and braces. Long lines can be broken over multiple lines by wrapping
+expressions in parentheses. The preferred place to break around a binary
+operator is after the operator, not before it. Example:
+
+if width == 0 and height == 0 and (color == 'red' or
+                                   emphasis is None):
+
+
+3-Space policy
+
+Avoid extraneous whitespace in the following situations:
+Immediately inside parentheses, brackets or braces.
+
+    Yes: spam(ham[1], {eggs: 2})
+    No:  spam( ham[ 1 ], { eggs: 2 } )
+
+Immediately before a comma, semicolon, or colon:
+
+    Yes: if x == 4: print x, y; x, y = y, x
+    No:  if x == 4 : print x , y ; x , y = y , x
+
+Immediately before the open parenthesis that starts the argument list of a
+function call:
+
+    Yes: spam(1)
+    No:  spam (1)
+
+Immediately before the open parenthesis that starts an indexing or slicing:
+
+    Yes: dict['key'] = list[index]
+    No:  dict ['key'] = list [index]
+
+More than one space around an assignment (or other) operator to align it with
+another.
+
+    Yes:
+
+    x = 1
+    y = 2
+    long_variable = 3
+
+    No:
+
+    x             = 1
+    y             = 2
+    long_variable = 3
+
+Always surround these binary operators with a single space on either side:
+assignment (=), augmented assignment (+=, -= etc.),
+comparisons (==, <, >, !=, <>, <=, >=, in, not in, is, is not),
+Booleans (and, or, not).
+
+If operators with different priorities are used, consider adding whitespace
+around the operators with the lowest priority(ies). Never use more than one
+space, and always have the same amount of whitespace on both sides of a binary
+operator.
+
+    Yes:
+
+    i = i + 1
+    submitted += 1
+    x = x*2 - 1
+    hypot2 = x*x + y*y
+    c = (a+b) * (a-b)
+
+    No:
+
+    i=i+1
+    submitted +=1
+    x = x * 2 - 1
+    hypot2 = x * x + y * y
+    c = (a + b) * (a - b)
+
+Don't use spaces around the = sign when used to indicate a keyword argument or
+a default parameter value.
+
+    Yes:
+
+    def complex(real, imag=0.0):
+        return magic(r=real, i=imag)
+
+    No:
+
+    def complex(real, imag = 0.0):
+        return magic(r = real, i = imag)
+
+
+4-Blank Line
+
+Use blank lines to indicate logical sections.
+
+
+5-Import
+
+Imports must be in seperated lines. Imports are always put at the top of the
+file, just after any module comments and docstrings, and before module globals
+and constants.
+
+Imports should be grouped in the following order:
+
+    standard library imports
+    related third party imports
+    local application/library specific imports
+
+You should put a blank line between each group of imports.
+
+
+6-Comments
+
+Block comments generally apply to some (or all) code that follows them, and are
+indented to the same level as that code. Each line of a block comment starts
+with a # and a single space (unless it is indented text inside the comment).
+
+Paragraphs inside a block comment are separated by a line containing a single #.
+
+Inline comments should be separated by at least two spaces from the statement.
+They should start with a # and a single space. Inline comments are unnecessary
+and in fact distracting if they state the obvious.
+
+
+7-Docstrings
+
+Write docstrings for all public modules, functions, classes, and methods.
+Docstrings are not necessary for non-public methods, but you should have a
+comment that describes what the method does. This comment should appear after
+the def line.
+
+The """ that ends a multiline docstring should be on a line by itself.
+Example:
+
+def my_function():
+    """Return the value 42
+
+    More detailed explanation about my_function.
+    Bla bla bla...
+    """
+    return 42
+
+
+8-Naming
+
+Use the following convention:
+module_name, package_name, ClassName, method_name, ExceptionName,
+function_name, GLOBAL_CONSTANT_NAME, global_var_name, instance_var_name,
+function_parameter_name, local_var_name
+
+-------------------------------------------------------------------------------
+

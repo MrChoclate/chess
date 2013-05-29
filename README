@@ -1,0 +1,28 @@
+The main goal of this project is to create a chess game.
+
+The player could play versus a human or an AI.
+The player could also watch an AI vs AI, save a game and rewatch a finished
+game.
+
+A network interface should be designed allowing the game to be played on
+2 machines.
+
+There should be a menu bar on the top whith the following options:
+Game: New game, Save game, Load game.
+Edit: Undo, redo.
+View: ✓ Classic display..., ✓ Display history
+Help: Help
+
+The history will be displayed on the the right of the board.
+Timers will be displayed up and down the board.
+Taked pieces will be displayed near the timers.
+
+Saved games are stored in a directory named saves.
+The differents AI are stored in a directory named AI.
+
+At the end of each game, it will be asked if the player want to save the game.
+
+-------------------------------------------------------------------------------
+
+Programming language: Python
+Library: pygame
