@@ -3,7 +3,7 @@
 This module contains the class Game which gathers all the necessary methods to
 play chess.
 """
-
+import sys
 from collections import namedtuple
 
 """Constants"""
@@ -58,17 +58,19 @@ class Game:
     history is a list of Move.
     undo_history is a list of undone Move.
     white_captured_pieces is a list of all white pieces which are taken.
+    black_captured_pieces is a list of all black pieces which are taken.
     """
 
     def __init__(self):
         """Create the board and initialize the history."""
+
         self.board = new_board();
         self.history = []
         self.undo_history = []
         self.white_captured_pieces = []
         self.black_captured_pieces = []
 
-    def _can_piece_move(self, s_x, s_y), (d_x, d_y)):
+    def _can_piece_move(self, (s_x, s_y), (d_x, d_y)):
         """Say if the piece at (s_x, s_y) can go to (d_x, d_y).
 
         Return the Move if the piece can move, else return False.
@@ -77,13 +79,56 @@ class Game:
     def _capture(self, (x, y)):
         """Capture the piece at (x, y) and store it in the right list."""
 
+        assert((x, y) in self.board)
+        if(self.board[x, y].color == WHITE_COLOR):
+            self.white_captured_pieces.append(self.board[x, y])
+        elif(self.board[x, y].color == BLACK_COLOR):
+            self.black_captured_pieces.append(self.board[x, y])
+        else:
+            sys.exit("Unknown piece color")
+
     def _capture_en_passant(self, color, (x, y)):
         """Capture the piece when the 'color' pawn goes to (x, y)."""
+
+        if(color == WHITE_COLOR):
+            y -= 1
+        elif(color == BLACK_COLOR):
+            y += 1
+        else:
+            sys.exit("Unknown player color")
+
+        self._capture((x,y))
+
+    def _where_is_king(self, color):
+        """Return the position of the king color"""
+
+        for pos, piece in self.board.iteritems():
+            if(piece.type_ == KING & piece.color = color):
+                return pos
+
+        # Error message
+        if(color == WHITE_COLOR):
+            c = "white"
+        elif(color == BLACK_COLOR):
+            c = "black"
+        else:
+            sys.exit("Unknown player color")
+        sys.exit("Error, "+c+" king not found")
 
     def is_check(self, color):
         """Return True if the 'color' king is in check"""
 
-    def is_check_mate(
+    def is_check_mate(self, color):
+        """Return True if the 'color' king is check mate"""
+
+        if not self.is_check(color):
+            return False
+
+    def undo(self):
+        """Undo the last Move and store it in undo_history"""
+
+    def redo(self):
+        """Redo the last undone Move"""
 
     def move(self, color, (src_x, src_y), (dest_x, dest_y)):
         """Move the 'color' piece from (src_x, src_y) to (dest_x, dest_y).
@@ -122,4 +167,5 @@ class Game:
             undo_history.pop
             return False
 
+        del undo_history
         return True
