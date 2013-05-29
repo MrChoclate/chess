@@ -70,11 +70,62 @@ class Game:
         self.white_captured_pieces = []
         self.black_captured_pieces = []
 
+    def _can_pawn_move(self, color, (s_x, s_y), (d_x, d_y)):
+        """Say if the 'color' pawn at (s_x, s_y) can go to (d_x, d_y).
+
+        Return the Move if the pawn can, else return False.
+        """
+
+    def _can_bishop_move(self, color, (s_x, s_y), (d_x, d_y)):
+        """Say if the 'color' bishop at (s_x, s_y) can go to (d_x, d_y).
+
+        Return the Move if the bishop can, else return False.
+        """
+
+    def _can_knight_move(self, color, (s_x, s_y), (d_x, d_y)):
+        """Say if the 'color' knight at (s_x, s_y) can go to (d_x, d_y).
+
+        Return the Move if the knight can, else return False.
+        """
+
+    def _can_rook_move(self, color, (s_x, s_y), (d_x, d_y)):
+        """Say if the 'color' rook at (s_x, s_y) can go to (d_x, d_y).
+
+        Return the Move if the rook can, else return False.
+        """
+
+    def _can_queen_move(self, color, (s_x, s_y), (d_x, d_y)):
+        """Say if the 'color' queen at (s_x, s_y) can go to (d_x, d_y).
+
+        Return the Move if the queen can, else return False.
+        """
+
+    def _can_king_move(self, color, (s_x, s_y), (d_x, d_y)):
+        """Say if the 'color' king at (s_x, s_y) can go to (d_x, d_y).
+
+        Return the Move if the king can, else return False.
+        """
+
     def _can_piece_move(self, (s_x, s_y), (d_x, d_y)):
         """Say if the piece at (s_x, s_y) can go to (d_x, d_y).
 
-        Return the Move if the piece can move, else return False.
+        Return the Move if the piece can, else return False.
         """
+
+        color = self.board[s_x, s_y].color
+
+        if(self.board[s_x, s_y].type_ == PAWN):
+            return self._can_pawn_move(color, (s_x, s_y), (d_x, d_y))
+        elif(self.board[s_x, s_y].type_ == BISHOP):
+            return self._can_bishop_move(color, (s_x, s_y), (d_x, d_y))
+        elif(self.board[s_x, s_y].type_ == KNIGHT):
+            return self._can_knight_move(color, (s_x, s_y), (d_x, d_y))
+        elif(self.board[s_x, s_y].type_ == ROOK):
+            return self._can_rook_move(color, (s_x, s_y), (d_x, d_y))
+        elif(self.board[s_x, s_y].type_ == QUEEN):
+            return self._can_queen_move(color, (s_x, s_y), (d_x, d_y))
+        elif(self.board[s_x, s_y].type_ == KING):
+            return self._can_king_move(color, (s_x, s_y), (d_x, d_y))
 
     def _capture(self, (x, y)):
         """Capture the piece at (x, y) and store it in the right list."""
@@ -98,6 +149,9 @@ class Game:
             sys.exit("Unknown player color")
 
         self._capture((x,y))
+
+    def _castling(color, (x, y)):
+        """Move the rook on the other side of the king position (x, y)."""
 
     def _where_is_king(self, color):
         """Return the position of the king color"""
@@ -150,8 +204,10 @@ class Game:
 
         # Store the Move in m
         m = self._can_piece_move((src_x, src_y), (dest_x, dest_y))
-        if(type(m) == bool or type(m) != type(Move)):
+        if(type(m) == bool):
             return False
+        if(type(m) != type(Move)):
+            sys.exit("Unknown type of move")
 
         # Move the piece
         if(m.type_ == CAPTURE):
