@@ -3,6 +3,7 @@
 This module contains the class Game which gathers all the necessary methods to
 play chess.
 """
+
 import sys
 from collections import namedtuple
 
@@ -28,8 +29,9 @@ NORMAL_MOVE,
 CAPTURE,
 CASTLING,
 EN_PASSANT,
-PROMOTION
-) = range(5)
+PROMOTION,
+CAPTURE_PROMOTION
+) = range(6)
 
 Piece = namedtuple('Piece', 'type_, color')
 Move  = namedtuple('Move', 'src, dest, type_')
@@ -180,6 +182,38 @@ class Game:
 
     def undo(self):
         """Undo the last Move and store it in undo_history"""
+
+    m = history.pop
+    undo_history.append(m)
+    color = self.board[m.dest].color
+
+    # Undo a normal move
+    self.board[m.source] = self.board[m.dest]
+        del self.board[m.dest]
+    # Undo a capture
+    elif(m.type_ = CAPTURE):
+        if(color = WHITE_COLOR):
+            self.board[m.dest] = black_captured_pieces.pop()
+        elif(color = BLACK_COLOR):
+            self.board[m.dest] = white_captured_pieces.pop()
+        else:
+            sys.exit("Unknown piece color")
+    # Undo a castling
+    elif(m.type_ = CASTLING):
+        (x, y) = m.dest
+        if(x = 3):
+            self.board[1, y] = self.board[x+1, y]
+            del self.board[x+1, y]
+        elif(x = 7):
+            self.board[BOARD_SIZE, y] = self.board[x-1, y]
+            del self.board[x-1, y]
+        else:
+            sys.exit("Can't undo castling move")
+    # Undo a promotion without capture
+    elif(m.type_ = PROMOTION):
+        self.board[m.source].type_ = PAWN
+    # Undo a promotion with capture
+    elif(
 
     def redo(self):
         """Redo the last undone Move"""
