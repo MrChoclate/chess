@@ -1,7 +1,6 @@
 """Rules module
 
-This module contains the class Game which gathers all the necessary methods to
-play chess.
+This module contains the class Rules to know all the rules to play chess.
 """
 
 import sys
@@ -9,6 +8,10 @@ from collections import namedtuple
 
 """Constants"""
 BOARD_SIZE = 8
+WHITE_PAWN_ROW = 2
+BLACk_PAWN_ROW = 7
+WHITE_PAWN_DIRECTION = 1
+BLACK_PAWN_DIRECTION = -1
 
 (   # Color
 WHITE_COLOR,
@@ -33,184 +36,114 @@ PROMOTION,
 CAPTURE_PROMOTION
 ) = range(6)
 
-Piece = namedtuple('Piece', 'type_, color')
-Move  = namedtuple('Move', 'src, dest, type_')
+Move = namedtuple('Move', 'src, dest, type_')
 
 """Functions"""
-def new_board():
-    """Initialize the chessboard which is a dict"""
+def new_board(history):
+    """Initialize the chessboard which is a dict.
+
+    The parameter history is used to bound the history to the pieces.
+    """
     b = {}
 
     for x in xrange(1, BOARD_SIZE+1):
-        b[x, 2] = Piece(PAWN, WHITE_COLOR)
-        b[x, BOARD_SIZE-1] = Piece(PAWN, BLACK_COLOR)
+        b[x, WHITE_PAWN_ROW] = Piece(PAWN, WHITE_COLOR, b, history).create()
+        b[x, BLACk_PAWN_ROW] = Piece(PAWN, BLACK_COLOR, b, history).create()
 
     for x, type_ in enumerate([ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP,
                                KNIGHT, ROOK], start=1):
-        b[x, 1] = Piece(type_, WHITE_COLOR)
-        b[x, BOARD_SIZE] = Piece(type_, BLACK_COLOR)
+        b[x, 1] = Piece(type_, WHITE_COLOR, b, history).create()
+        b[x, BOARD_SIZE] = Piece(type_, BLACK_COLOR, b, history).create()
 
     return b
 
-"""Class"""
-class Game:
-    """The class Game contains all the mecanism to play chess.
+def ennemy_color(color):
+    """Return the ennemy color of 'color'."""
 
-    board is a dict which contains the chessboard.
-    history is a list of Move.
-    undo_history is a list of undone Move.
-    white_captured_pieces is a list of all white pieces which are taken.
-    black_captured_pieces is a list of all black pieces which are taken.
+    if(color == WHITE_COLOR):
+        return BLACK_COLOR
+    if(color == BLACK_COLOR):
+        return WHITE_COLOR
+    sys.exit("Unknown color while looking for the ennemy color")
+
+def where_is_king(board, color):
+    """Return the coordinates of the 'color' king."""
+
+    assert(color in [WHITE_COLOR, BLACK_COLOR])
+    for (x, y), p in board.iteritems():
+        if(p.get_type == KING and p.color == color):
+            return (x, y)
+
+    # Error message
+    if(color == WHITE_COLOR):
+        s = "White"
+    else:
+        s = "Black"
+    sys.exit(s + " king not found")
+
+def is_controlled(board, (x, y), color):
+    """Return True if the coordinates (x, y) is controlled by a 'color' piece."""
+
+def is_check(board, color):
+    """Return True if the 'color' king is in check."""
+
+def is_check_mate(board, color):
+    """Return True if the 'color' king is check mate.
+
+    It is assumed that the king is already in check.
     """
 
-    def __init__(self):
-        """Create the board and initialize the history."""
+def promote(board, (x, y), type_):
+    """Transform the pawn at (x, y) into type_."""
 
-        self.board = new_board();
-        self.history = []
-        self.undo_history = []
-        self.white_captured_pieces = []
-        self.black_captured_pieces = []
+    assert((x, y) in board and board[x, y].get_type() == PAWN)
 
-    def _can_piece_move(self, (s_x, s_y), (d_x, d_y)):
-        """Say if the piece at (s_x, s_y) can go to (d_x, d_y).
+    c, h = board[x, y].color, board[x, y].history
+    board[x, y] = Piece(type_, c, board, h).create()
 
-        Return the Move if the piece can, else return False.
-        """
+"""Classes"""
+class Player():
+    """The class player is used to know data about the player.
 
-        color = self.board[s_x, s_y].color
+    It's used to know the list of captured pieces, the time spent playing, if the player is actually playing.
+    """
 
-        if(self.board[s_x, s_y].type_ == PAWN):
-            return self._can_pawn_move(color, (s_x, s_y), (d_x, d_y))
-        elif(self.board[s_x, s_y].type_ == BISHOP):
-            return self._can_bishop_move(color, (s_x, s_y), (d_x, d_y))
-        elif(self.board[s_x, s_y].type_ == KNIGHT):
-            return self._can_knight_move(color, (s_x, s_y), (d_x, d_y))
-        elif(self.board[s_x, s_y].type_ == ROOK):
-            return self._can_rook_move(color, (s_x, s_y), (d_x, d_y))
-        elif(self.board[s_x, s_y].type_ == QUEEN):
-            return self._can_queen_move(color, (s_x, s_y), (d_x, d_y))
-        elif(self.board[s_x, s_y].type_ == KING):
-            return self._can_king_move(color, (s_x, s_y), (d_x, d_y))
-
-
-
-    def _castling(color, (x, y)):
-        """Move the rook on the other side of the king position (x, y)."""
-
-    def _where_is_king(self, color):
-        """Return the position of the king color"""
-
-        for pos, piece in self.board.iteritems():
-            if(piece.type_ == KING & piece.color = color):
-                return pos
-
-        # Error message
+    def __init__(self, color):
+        self.color = color
+        self.captured_pieces = []
+        self.time_spent = 0
         if(color == WHITE_COLOR):
-            c = "white"
+            self.playing = True
         elif(color == BLACK_COLOR):
-            c = "black"
+            self.playing = False
         else:
-            sys.exit("Unknown player color")
-        sys.exit("Error, "+c+" king not found")
+            sys.exit("Unknow color while initializing the player");
 
-    def is_check(self, color):
-        """Return True if the 'color' king is in check"""
+    def is_playing(self):
+        """Return True if the player is playing."""
 
-    def is_check_mate(self, color):
-        """Return True if the 'color' king is check mate"""
+        return self.playing
 
-        if not self.is_check(color):
-            return False
+    def played(self):
+        """The player played and is now not playing."""
 
-    def undo(self):
-        """Undo the last Move and store it in undo_history"""
+        self.playing = False
 
-    m = history.pop
-    undo_history.append(m)
-    color = self.board[m.dest].color
+    def must_play(self):
+        """The player is now playing."""
 
-    # Undo a normal move
-    self.board[m.src] = self.board[m.dest]
-        del self.board[m.dest]
-    # Undo a capture
-    elif(m.type_ = CAPTURE):
-        if(color = WHITE_COLOR):
-            self.board[m.dest] = black_captured_pieces.pop()
-        elif(color = BLACK_COLOR):
-            self.board[m.dest] = white_captured_pieces.pop()
-        else:
-            sys.exit("Unknown piece color")
-    # Undo a castling
-    elif(m.type_ = CASTLING):
-        (x, y) = m.dest
-        if(x = 3):
-            self.board[1, y] = self.board[x+1, y]
-            del self.board[x+1, y]
-        elif(x = 7):
-            self.board[BOARD_SIZE, y] = self.board[x-1, y]
-            del self.board[x-1, y]
-        else:
-            sys.exit("Can't undo castling move")
-    # Undo a promotion without capture
-    elif(m.type_ = PROMOTION):
-        self.board[m.src].type_ = PAWN
-    # Undo a promotion with capture
-    elif(
+        self.playing = True
 
-    def redo(self):
-        """Redo the last undone Move"""
+    def get_captured_pieces(self):
+        """Return the list of captured pieces by the player"""
 
-    def move(self, color, (src_x, src_y), (dest_x, dest_y)):
-        """Move the 'color' piece from (src_x, src_y) to (dest_x, dest_y).
-
-        The piece must be of the color 'color'.
-        Return True if the piece has been successfully moved.
-        """
-
-        # Test if the parameters are wrongs
-        if color not in [WHITE_COLOR, BLACK_COLOR]:
-            return False
-        if (src_x or src_y or dest_x or dest_y) not in range(1, BOARD_SIZE+1):
-            return False
-        if(self.board[src_x, src_y].color != color):
-            return False
-        if((dest_x, dest_y) in self.board and
-                                    self.board[dest_x, dest_y].color == color):
-            return False
-
-        # Store the Move in m
-        m = self._can_piece_move((src_x, src_y), (dest_x, dest_y))
-        if(type(m) == bool):
-            return False
-        if(type(m) != type(Move)):
-            sys.exit("Unknown type of move")
-
-        # Move the piece
-        if(m.type_ == CAPTURE):
-            self._capture(dest_x, dest_y)
-        if(m.type_ == EN_PASSANT):
-            self._capture_en_passant(color, (dest_x, dest_y))
-        board[dest_x, dest_y] = board[src_x, src_y]
-        del board[src_x, src_y]
-
-        # If 'color' is in check, undo the move
-        if(self.is_check(color)):
-            self.undo()
-            undo_history.pop
-            return False
-
-        del undo_history
-        return True
-
-class Rules():
-    """The class Rules contains all technical methods to play"""
+        return self.captured_pieces
 
 
-class Piece(Rules):
-    """The class Piece represents a piece in a chess game.
+class Piece():
+    """The class Piece sould only be used to create a piece.
 
-    All can capture an ennemy piece.
+    All piece can capture an ennemy piece.
     """
 
     def __init__(self, type_, color, board, history):
@@ -219,16 +152,31 @@ class Piece(Rules):
         self.board = board
         self.history = history
 
-    def capture(self, (x, y)):
-        """Capture the piece at (x, y) and store it in the right list."""
+    def create(self):
+        """Return the type_ piece"""
 
-        assert((x, y) in self.board)
-        if(self.board[x, y].color == WHITE_COLOR):
-            self.white_captured_pieces.append(self.board[x, y])
-        elif(self.board[x, y].color == BLACK_COLOR):
-            self.black_captured_pieces.append(self.board[x, y])
-        else:
-            sys.exit("Unknown piece color")
+        if(self.type_ == PAWN):
+            return Pawn(self.color, self.board, self.history)
+        if(self.type_ == BISHOP):
+            return Bishop(self.color, self.board)
+        if(self.type_ == KNIGHT):
+            return Knight(self.color, self.board)
+        if(self.type_ == ROOK):
+            return Rook(self.color, self.board, self.history)
+        if(self.type_ == QUEEN):
+            return Queen(self.color, self.board)
+        if(self.type_ == KING):
+            return King(self.color, self.board, self.history)
+
+        sys.exit("Unknown piece type while creating it")
+
+    def capture(self, player, (x, y)):
+        """The player 'player' capture the piece at (x, y) and store it in his list."""
+
+        assert((x, y) in self.board and self.board[x, y].color != player.color)
+        player.captured_pieces.append(self.board[x, y])
+        del self.board[x, y]
+
 
 class Pawn(Piece):
     """The class Pawn represents a pawn in chess game.
@@ -241,29 +189,41 @@ class Pawn(Piece):
         self.board = board
         self.history = history
 
-    def promote(self, (x, y), type_):
-        """!!!Transform the pawn at (x, y) into type_ !!!
-        This method shouldn't be there !!!
-        """
+    def get_type(self):
+        """Return the type of the piece."""
+        return PAWN
 
-    def capture_en_passant(self, (x, y)):
-        """Capture the piece when the 'color' pawn goes to (x, y)."""
-
+    def get_direction(self):
+        """Return the pawn direction depending on his color."""
         if(self.color == WHITE_COLOR):
+            return WHITE_PAWN_DIRECTION
+        if(self.color == BLACK_PAWN_DIRECTION):
+            return BLACK_PAWN_DIRECTION
+        sys.exit("Unknown color while looking for the direction of the pawn")
+
+    def capture_en_passant(self, player, (x, y)):
+        """Capture the piece when the pawn of player goes to (x, y)."""
+
+        assert(player.color == self.color)
+
+        if(player.color == WHITE_COLOR):
             y -= 1
-        elif(self.color == BLACK_COLOR):
+        elif(player.color == BLACK_COLOR):
             y += 1
         else:
             sys.exit("Unknown player color")
 
-        self.capture((x,y))
+        self.capture(player, (x,y))
 
     def can_move(self, (s_x, s_y), (d_x, d_y)):
         """Say if the pawn at (s_x, s_y) can go to (d_x, d_y).
 
-        Pawn have a special move called 'en passant'.
+        Pawn have two special moves called 'en passant' and promotion.
         Return the Move if the pawn can, else return False.
         """
+
+        d = self.get_direction()
+
 
 class Bishop(Piece):
     """The class Bishop represents a bishop in chess Game.
@@ -274,6 +234,10 @@ class Bishop(Piece):
     def __init__(self, color, board):
         self.color = color
         self.board = board
+
+    def get_type(self):
+        """Return the type of the piece."""
+        return BISHOP
 
     def can_move(self, (s_x, s_y), (d_x, d_y)):
         """Say if the bishop at (s_x, s_y) can go to (d_x, d_y).
@@ -290,6 +254,10 @@ class Knight(Piece):
     def __init__(self, color, board):
         self.color = color
         self.board = board
+
+    def get_type(self):
+        """Return the type of the piece."""
+        return KNIGHT
 
     def can_move(self, (s_x, s_y), (d_x, d_y)):
         """Say if the knight at (s_x, s_y) can go to (d_x, d_y).
@@ -308,13 +276,17 @@ class Rook(Piece):
         self.board = board
         self.history = history
 
+    def get_type(self):
+        """Return the type of the piece."""
+        return ROOK
+
     def castling(self, (x, y)):
         """Move the rook at (x, y) and move the king to perform a castling.
 
         It assumes that the rook can castling.
         """
 
-    def can_move(self, (s_x, s_y), (d_x, d_y), history):
+    def can_move(self, (s_x, s_y), (d_x, d_y)):
         """Say if the rook at (s_x, s_y) can go to (d_x, d_y).
 
         Return the Move if the rook can, else return False.
@@ -329,6 +301,10 @@ class Queen(Piece):
         self.color = color
         self.board = board
 
+    def get_type(self):
+        """Return the type of the piece."""
+        return QUEEN
+
     def can_move(self, (s_x, s_y), (d_x, d_y)):
         """Say if the queen at (s_x, s_y) can go to (d_x, d_y).
 
@@ -337,12 +313,16 @@ class Queen(Piece):
 class King(Piece):
     """The class King represents a king in chess game.
 
-    The king can perform castling.
+    The king have a sepcial move shared with the rook called castling.
     """
-    def __init__(self, color, board, history)
+    def __init__(self, color, board, history):
         self.color = color
         self.board = board
         self.history = history
+
+    def get_type(self):
+        """Return the type of the piece."""
+        return KING
 
     def castling(self, (x, y)):
         """Move the king to (x, y) and move the rook to perform a castling.
@@ -350,7 +330,7 @@ class King(Piece):
         It is assumed that king can castling.
         """
 
-    def can_king_move(self, (s_x, s_y), (d_x, d_y), history):
+    def can_move(self, (s_x, s_y), (d_x, d_y)):
         """Say if the king at (s_x, s_y) can go to (d_x, d_y).
 
         Return the Move if the king can, else return False.
