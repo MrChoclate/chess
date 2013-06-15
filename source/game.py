@@ -7,13 +7,67 @@ He use the module rules to work and to know if everything is valid or not.
 import rules as ru
 
 """Constants"""
+BOARD_SIZE = 8
+
+(   # Color
+WHITE_COLOR,
+BLACK_COLOR
+) = range(2)
+
+(   # Move type
+NORMAL_MOVE,
+CAPTURE,
+CASTLING,
+EN_PASSANT,
+PROMOTION,
+CAPTURE_PROMOTION
+) = range(6)
+
 (   # This is what the move method can return.
 INVALID_MOVE,
 VALID_MOVE,
+PROMOTE,
 CHECK,
 CHECK_MATE
 ) = range(4)
 
+class Player():
+    """The class player is used to know data about the player.
+
+    It's used to know the list of captured pieces, the time spent playing, and
+    if the player is actually playing.
+    """
+
+    def __init__(self, color):
+        self.color = color
+        self.captured_pieces = []
+        self.time_spent = 0
+        if(color == WHITE_COLOR):
+            self.playing = True
+        elif(color == BLACK_COLOR):
+            self.playing = False
+        else:
+            sys.exit("Unknown color while initializing the player");
+
+    def is_playing(self):
+        """Return True if the player is playing."""
+
+        return self.playing
+
+    def played(self):
+        """The player played and is now not playing."""
+
+        self.playing = False
+
+    def must_play(self):
+        """The player is now playing."""
+
+        self.playing = True
+
+    def get_captured_pieces(self):
+        """Return the list of captured pieces by the player"""
+
+        return self.captured_pieces
 
 class Game:
     """The class Game contains all the mecanism to play chess."""
@@ -23,13 +77,23 @@ class Game:
 
         self.history = []
         self.undo_history = []
-        self.board = ru.new_board(self.history);
-        self.white_player = ru.Player(ru.WHITE_COLOR)
-        self.black_plauer = ru.Plauer(ru.BLACK_COLOR)
+        self.board = ru.Board(self.history);
+        self.white_player = Player(WHITE_COLOR)
+        self.black_player = Player(BLACK_COLOR)
 
+    def __get_player(self, color):
+        """Return the 'color' player attribute."""
+
+        if(color == WHITE_COLOR):
+            return white_player
+        if(color == BLACK_COLOR):
+            return black_player
+        sys.exit("Unknown color while looking for the player attribute")
+        
     def get_board(self):
         """Return the board."""
-        return self.board
+        
+        return self.board.dict_
 
     def undo(self):
         """Undo the last Move and store it in undo_history."""
@@ -40,10 +104,39 @@ class Game:
     def move(self, color, (src_x, src_y), (dest_x, dest_y)):
         """Move the 'color' piece from (src_x, src_y) to (dest_x, dest_y).
 
-        If the move is invalid, it return INVALID_MOVE.
-        if the move is valid, it can return:
+        If the move or the parameters are invalid, it return INVALID_MOVE.
+        If the move is valid, it can return:
         VALID_MOVE if the piece moved.
-        CHECK if now the ennemy of 'color is in check.
-        CHECK mate if the 'color' won the game.
+        PROMOTE if there is a pawn to promote.
+        CHECK if now the ennemy of 'color' is in check.
+        CHECK mate if 'color' won the game.
         """
 
+        # Wrongs parameters
+        if(color not in [WHITE_COLOR, BLACK_COLOR] or (src_x, src_y) ==
+           (dest_x, dest_y) or (src_x and src_y and dest_x and dest_y) not in
+           range(1, BOARD_SIZE+1) or (src_x, src_y) not in self.board):
+            return INVALID_MOVE
+
+        m = board[src_x, src_y].can_move((src_x, src_y), (dest_x, dest_y))
+
+        if(type(m) == bool and m == False):
+            return INVALID_MOVE
+        assert(type(m) == type(ru.Move))
+
+        # We assumes that moving the piece will not let the 'color' king in
+        # check. We will check it when the piece will be moved and will undo
+        # the move if it's not allowed.
+        self.history.append(m)
+
+        if(m.type_ == (CAPTURE or CAPTURE_PROMOTION)):
+            self.__get_player(color).captured_pieces.append(board[dest_x,
+                                                                  dest_y])
+
+        board[dest_x, dest_y] = board[src_x, src_y]
+        del board[src_x, src_y]
+
+            
+            
+
+        
