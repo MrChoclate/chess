@@ -12,6 +12,10 @@ WHITE_PAWN_ROW = 2
 BLACK_PAWN_ROW = 7
 WHITE_PAWN_DIRECTION = 1
 BLACK_PAWN_DIRECTION = -1
+CARDINAL_DIRECTION = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+FOUR_DIAGONALS = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
+KNIGHT_MOVES = [(1,2), (2,1), (-1,2), (-2,1), (1,-2), (2,-1), (-1,-2),
+                                                                     (-2,-1)]
 
 (   # Color
 WHITE_COLOR,
@@ -103,14 +107,60 @@ class Board():
         sys.exit(s + " king not found")
 
     def who_controls(self, (x, y), color):
-        """Return the list of 'color' pieces which control the coordinates
-        (x, y).
-        """
+        """Return the list of 'color' pieces position which control the
+        coordinates (x, y)."""
+        
+        l = []
 
+        # Is it controlled by a pawn?
+        for i in [-1, 1]:
+            pos = (x + i, y - Pawn(color).get_direction())
+            if(pos in self.dict_ and self.dict_[pos].color == color and
+               self.dict_[pos].get_type() == PAWN):
+                   l.append(pos)
+                   
+        # Is it controlled by a knight?
+        for (i, j) in KNIGHT_MOVES:
+            pos = (x + i, y +j)
+            if(pos in self.dict_ and self.dict_[pos].color == color and
+               self.dict_[pos].get_type() == KNIGHT):
+                   l.append(pos)
+            
+        # Is it controlled by a bishop/queen?
+        for (i, j) in FOUR_DIAGONALS:
+            tmp_x, tmp_y = x + i, y + j
+            while((tmp_x, tmp_y) not in self.dict_):
+                tmp_x, tmp_y = tmp_x + i, tmp_y + j
+                if((tmp_x or tmp_y) not in range(1, BOARD_SIZE+1)):
+                    break
+            else:
+                if(self.dict_[tmp_x, tmp_y].color == color and
+                   self.dict_[tmp_x, tmp_y].get_type == (BISHOP or QUEEN)):
+                       l.append(tmp_x, tmp_y)
+        
+        # Is it controlled by a rook/queen?
+        for (i, j) in CARDINAL_DIRECTION:
+            tmp_x, tmp_y = x + i, y + j
+            while((tmp_x, tmp_y) not in self.dict_):
+                tmp_x, tmp_y = tmp_x + i, tmp_y + j
+                if((tmp_x or tmp_y) not in range(1, BOARD_SIZE+1)):
+                    break
+            else:
+                if(self.dict_[tmp_x, tmp_y].color == color and
+                   self.dict_[tmp_x, tmp_y].get_type == (ROOK or QUEEN)):
+                       l.append(tmp_x, tmp_y)
+                       
+        # Is it controlled by a king?
+        for (i, j) in CARDINAL_DIRECTION + FOUR_DIAGONALS:
+            pos = (x + i, y + j)
+            if(pos in self.dict_ and self.dict_[pos].color == color and
+               self.dict_[pos].get_type() == KING):
+                   l.append(pos)
+        
     def is_check(self, color):
         """Return True if the 'color' king is in check."""
 
-        if(self.is_controlled(self.where_is_king(color), enemy_color(color))):
+        if(self.who_controls(self.where_is_king(color), enemy_color(color))):
             return True
         else:
             return False
@@ -120,6 +170,10 @@ class Board():
 
         It is assumed that the king is already in check.
         """
+
+        # Can the king move?
+        # Can the player capture the threatening piece?
+        # Can the player block the check?
 
     def promote(self, (x, y), type_):
         """Transform the pawn at (x, y) into type_.
@@ -137,7 +191,7 @@ class Board():
 class Piece():
     """The class Piece should only be used to create a piece.
 
-    It give to all pieces the capture and get_type methods.
+    It give to all pieces the get_type() method.
     """
 
     def __init__(self, type_, color, board, history):
@@ -164,14 +218,6 @@ class Piece():
 
         sys.exit("Unknown piece type while creating it")
 
-    def capture(self, player, (x, y)):
-        """The player 'player' capture the piece at (x, y) and store it in his 
-        list."""
-
-        assert((x, y) in self.board and self.board[x, y].color != player.color)
-        player.captured_pieces.append(self.board[x, y])
-        del self.board[x, y]
-
     def get_type(self):
         """Return the type of the piece."""
         
@@ -183,7 +229,7 @@ class Pawn(Piece):
     Pawn have two special moves: promotion and 'en passant'.
     """
 
-    def __init__(self, color, board, history):
+    def __init__(self, color, board={}, history=[]):
         self.color = color
         self.board = board
         self.history = history
@@ -269,7 +315,7 @@ class Rook(Piece):
         self.type_ = ROOK
 
     def castling(self, (x, y)):
-        """Move the rook at (x, y) and move the king to perform a castling.
+        """Move the king to perform a castling while the rook is at (x, y).
 
         It assumes that the rook can castling.
         """
@@ -307,7 +353,7 @@ class King(Piece):
         self.type_ = KING
 
     def castling(self, (x, y)):
-        """Move the king to (x, y) and move the rook to perform a castling.
+        """Move the rook to perform a castling while the king is at (x, y).
 
         It is assumed that king can castling.
         """

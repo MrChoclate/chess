@@ -115,28 +115,39 @@ class Game:
         # Wrongs parameters
         if(color not in [WHITE_COLOR, BLACK_COLOR] or (src_x, src_y) ==
            (dest_x, dest_y) or (src_x and src_y and dest_x and dest_y) not in
-           range(1, BOARD_SIZE+1) or (src_x, src_y) not in self.board):
+           range(1, BOARD_SIZE+1) or (src_x, src_y) not in self.board or
+           self.board[src_x, src_y].color != color):
             return INVALID_MOVE
 
-        m = board[src_x, src_y].can_move((src_x, src_y), (dest_x, dest_y))
+            
+        m = self.board[src_x, src_y].can_move((src_x, src_y), (dest_x, dest_y))
 
         if(type(m) == bool and m == False):
             return INVALID_MOVE
         assert(type(m) == type(ru.Move))
 
-        # We assumes that moving the piece will not let the 'color' king in
-        # check. We will check it when the piece will be moved and will undo
-        # the move if it's not allowed.
         self.history.append(m)
 
         if(m.type_ == (CAPTURE or CAPTURE_PROMOTION)):
-            self.__get_player(color).captured_pieces.append(board[dest_x,
-                                                                  dest_y])
+            self.__get_player(color).captured_pieces.append(self.board[dest_x,
+                                                                       dest_y])
+        if(m.type_ == EN_PASSANT):
+            del self.board[dest_x, dest_y - ru.Pawn(color).get_direction()]
+                                                                  
+        self.board[dest_x, dest_y] = self.board[src_x, src_y]
+        del self.board[src_x, src_y]
 
-        board[dest_x, dest_y] = board[src_x, src_y]
-        del board[src_x, src_y]
+        if(m.type_ == CASTLING):
+            board[src_x, src_y].castling((src_x, src_y))
 
             
-            
+        if(m.type_ == (PROMOTION or CAPTURE_PROMOTION)):
+            return PROMOTE
 
+        if(self.board.is_check(ru.enemy_color(color))):
+            if(self.board.is_check_mate(ru.enemy_color(color)):
+                return CHECK_MATE
+            return CHECK
+
+        return VALID_MOVE
         
