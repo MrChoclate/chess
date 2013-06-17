@@ -5,6 +5,7 @@ This module contains the class Rules to know all the rules to play chess.
 
 import sys
 from collections import namedtuple
+from math import copysign
 
 """Constants"""
 BOARD_SIZE = 8
@@ -60,6 +61,23 @@ def new_board(history):
         b[x, BOARD_SIZE] = Piece(type_, BLACK_COLOR, b, history).create()
 
     return b
+    
+def get_path((s_x, s_y), (d_x, d_y)):
+    """Return the list of the squares between the two coordinates.
+
+    We assumes it's a row, a column or a diagonal.
+    """
+    assert(s_x == d_x or s_y == d_y or abs(float((d_y - s_y))/(d_x - s_x)) ==
+                                                                            1.)
+    i, j = cmp(d_x - s_x, 0), cmp(d_y - s_y, 0)
+
+    p = []
+    s_x, s_y = s_x + i, s_y + j
+    while((s_x, s_y) != (d_x, d_y)):
+        p.append((s_x, s_y))
+        s_x, s_y = s_x + i, s_y + j
+    
+    return p
 
 def enemy_color(color):
     """Return the enemy color of 'color'."""
@@ -171,9 +189,36 @@ class Board():
         It is assumed that the king is already in check.
         """
 
+        x, y = self.where_is_king(color)
+        l = self.who_controls((x, y), enemy_color(color))
+        assert(len(l) != 0)
+        
         # Can the king move?
+        for (i, j) in FOUR_DIAGONALS + CARDINAL_DIRECTION:
+            if((x + i, y + j) not in self.dict_ or
+               self.dict_[x + i, y + j].color == enemy_color(color)):
+                if(not self.who_controls((x, y), enemy_color(color))):
+                    return False
+
+        if(len(l) >= 2):
+            return True
+            
         # Can the player capture the threatening piece?
+        e_x, e_y = l[0]
+        l = self.who_controls((e_x, e_y), color)
+        for (i, j) in l:
+            if(self.dict_[i, j].can_move((i, j), (e_x, e_y)):
+                return False
+
         # Can the player block the check?
+        if(self.dict_[e_x, e_y].get_type == KNIGHT):
+            return True
+        for (i, j) in get_path((x, y), (e_x, e_y)):
+            l = self.who_controls((i, j), color)
+            for (p_x, p_y) in l:
+                if(self.dict_[p_x, p_y].can_move((p_x, p_y), (i, j)):
+                    return False
+        return True
 
     def promote(self, (x, y), type_):
         """Transform the pawn at (x, y) into type_.
@@ -191,13 +236,13 @@ class Board():
 class Piece():
     """The class Piece should only be used to create a piece.
 
-    It give to all pieces the get_type() method.
+    It give to all pieces the get_type() and is_pined() methods.
     """
 
     def __init__(self, type_, color, board, history):
         self.type_ = type_
         self.color = color
-        self.board = board
+        self.board = Board(history)
         self.history = history
 
     def create(self):
@@ -223,6 +268,20 @@ class Piece():
         
         return self.type_
 
+    def is_pined(self, (x, y)):
+        """Return True if the piece at (x, y) can't move because it protects
+        the king from being attacked."""
+
+        tmp = self.board[x, y]
+        c = tmp.color
+        l = self.who_controls(self.where_is_king(c), enemy_color(c))
+
+        del self.board[x, y]
+        l_2 = self.who_controls(self.where_is_king(c), enemy_color(c))
+
+        self.board[x, y] = tmp
+        return l_2 > l
+
 class Pawn(Piece):
     """The class Pawn represents a pawn in chess game.
 
@@ -244,19 +303,14 @@ class Pawn(Piece):
             return BLACK_PAWN_DIRECTION
         sys.exit("Unknown color while looking for the direction of the pawn")
 
-    def capture_en_passant(self, player, (x, y)):
-        """Capture the piece when the pawn of player goes to (x, y)."""
+    def get_initial_row(self, color):
+        """Return the initial row of a 'color' pawn."""
 
-        assert(player.color == self.color)
-
-        if(player.color == WHITE_COLOR):
-            y -= 1
-        elif(player.color == BLACK_COLOR):
-            y += 1
-        else:
-            sys.exit("Unknown player color")
-
-        self.capture(player, (x,y))
+        if(self.color == WHITE_COLOR):
+            return WHITE_PAWN_ROW
+        if(self.color == BLACK_PAWN_DIRECTION):
+            return BLACK_PAWN_ROW
+        sys.exit("Unknown color while looking for the initial row of pawns")
 
     def can_move(self, (s_x, s_y), (d_x, d_y)):
         """Say if the pawn at (s_x, s_y) can go to (d_x, d_y).
@@ -264,14 +318,22 @@ class Pawn(Piece):
         Pawn have two special moves called 'en passant' and promotion.
         Return the Move if the pawn can, else return False.
         """
-
+        assert(self.board[s_x, s_y].get_type() == self.type_ and
+               self.board[s_x, s_y].color == self.color)
+        
         d = self.get_direction()
+
+        if((d_y - s_y == 2 * d and s_y != self.get_initial_row()) or
+           d_y - s_y != d or abs(s_x - d_x) > 1):
+            return False
+
+        # !!! not finished yet
 
 
 class Bishop(Piece):
     """The class Bishop represents a bishop in chess Game.
 
-    The Bishop have only normal move.
+    The Bishop have only a normal move.
     """
 
     def __init__(self, color, board):
@@ -285,10 +347,13 @@ class Bishop(Piece):
         Return the Move if the bishop can, else return False.
         """
 
+        assert(self.board[s_x, s_y].get_type() == self.type_ and
+               self.board[s_x, s_y].color == self.color)
+        
 class Knight(Piece):
     """The class Knight represents a knight in chess game.
 
-    The knight have only normal move.
+    The knight have only a normal move.
     """
 
     def __init__(self, color, board):
@@ -301,6 +366,9 @@ class Knight(Piece):
 
         Return the Move if the knight can, else return False.
         """
+
+        assert(self.board[s_x, s_y].get_type() == self.type_ and
+               self.board[s_x, s_y].color == self.color)
 
 class Rook(Piece):
     """The class Rook represents a rook in chess game.
@@ -326,10 +394,13 @@ class Rook(Piece):
         Return the Move if the rook can, else return False.
         """
 
+        assert(self.board[s_x, s_y].get_type() == self.type_ and
+               self.board[s_x, s_y].color == self.color)
+
 class Queen(Piece):
     """The class Queen represents a queen in chess game.
 
-    The queen have no special move.
+    The queen have only a normal move.
     """
     def __init__(self, color, board):
         self.color = color
@@ -341,6 +412,10 @@ class Queen(Piece):
 
         Return the Move if the queen can, else return False.
         """
+
+        assert(self.board[s_x, s_y].get_type() == self.type_ and
+               self.board[s_x, s_y].color == self.color)
+               
 class King(Piece):
     """The class King represents a king in chess game.
 
@@ -363,3 +438,6 @@ class King(Piece):
 
         Return the Move if the king can, else return False.
         """
+
+        assert(self.board[s_x, s_y].get_type() == self.type_ and
+               self.board[s_x, s_y].color == self.color)

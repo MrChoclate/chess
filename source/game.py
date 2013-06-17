@@ -114,8 +114,8 @@ class Game:
 
         # Wrongs parameters
         if(color not in [WHITE_COLOR, BLACK_COLOR] or (src_x, src_y) ==
-           (dest_x, dest_y) or (src_x and src_y and dest_x and dest_y) not in
-           range(1, BOARD_SIZE+1) or (src_x, src_y) not in self.board or
+           (dest_x, dest_y) or (src_x and src_y and  dest_x and dest_y) not in
+           range(1, BOARD_SIZE+1)  or (src_x, src_y) not in self.board or
            self.board[src_x, src_y].color != color):
             return INVALID_MOVE
 
