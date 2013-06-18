@@ -435,6 +435,22 @@ class Bishop(Piece):
                (s_x, s_y) != (d_x, d_y))
         if(self.let_king_under_attack((s_x, s_y), (d_x, d_y))):
             return False
+
+        if(abs(float((d_y - s_y))/(d_x - s_x)) != 1.):
+            return False
+
+        for (i, j) in get_path((s_x, s_y), (d_x, d_y)):
+            if((i, j) in self.board):
+                return False
+
+        if((d_x, d_y) not in self.board):
+            return Move((s_x, s_y), (d_x, d_y), NORMAL_MOVE)
+
+        if(self.board[d_x, d_y].color == enemy_color(self.color)):
+            return Move((s_x, s_y), (d_x, d_y), CAPTURE)
+
+        return False
+            
         
 class Knight(Piece):
     """The class Knight represents a knight in chess game.
