@@ -66,7 +66,7 @@ def new_board(history):
 def get_path((s_x, s_y), (d_x, d_y)):
     """Return the list of the squares between the two coordinates.
 
-    We assumes it's a row, a column or a diagonal.
+    We assume it's a row, a column or a diagonal.
     """
     
     assert(s_x == d_x or s_y == d_y or abs(float((d_y - s_y))/(d_x - s_x)) ==
@@ -372,6 +372,7 @@ class Pawn(Piece):
         Pawn have two special moves called 'en passant' and promotion.
         Return the Move if the pawn can, else return False.
         """
+        
         assert(self.board[s_x, s_y].get_type() == self.type_ and
                self.board[s_x, s_y].color == self.color and
                (s_x and s_y and d_x and d_y) in range(1, BOARD_SIZE + 1) and
@@ -478,6 +479,13 @@ class Knight(Piece):
         if(self.let_king_under_attack((s_x, s_y), (d_x, d_y))):
             return False
 
+        if((d_x, d_y) not in self.board):
+            return Move((s_x, s_y), (d_x, d_y), NORMAL_MOVE)
+        if(self.board[d_x, d_y].color == enemy_color(self.color):
+            return Move((s_x, s_y), (d_x, d_y), CAPTURE)
+            
+        return False
+
 class Rook(Piece):
     """The class Rook represents a rook in chess game.
     The rook moves any number of vacant squares vertically or horizontally.
@@ -493,9 +501,12 @@ class Rook(Piece):
     def castling(self, (x, y)):
         """Move the king to perform a castling while the rook is at (x, y).
 
-        It assumes that the rook can castling.
+        It assumes that the player can castling.
         """
 
+    def can_castling(self, (s_x, s_y), (d_x, d_y)):
+        """Return True if the rook can castling."""
+        
     def can_move(self, (s_x, s_y), (d_x, d_y)):
         """Say if the rook at (s_x, s_y) can go to (d_x, d_y).
 
@@ -509,12 +520,31 @@ class Rook(Piece):
         if(self.let_king_under_attack((s_x, s_y), (d_x, d_y))):
             return False
 
+        if(s_x != d_x or s_y != d_y):
+            return False
+
+        if(self.can_castling((s_x, s_y), (d_x, d_y))):
+            return Move((s_x, s_y), (d_x, d_y), CASTLING)
+            
+        for (i, j) in get_path((s_x, s_y), (d_x, d_y)):
+            if((i, j) in self.board):
+                return False
+
+        if((d_x, d_y) not in self.board):
+            return Move((s_x, s_y), (d_x, d_y), NORMAL_MOVE)
+
+        if(self.board[d_x, d_y].color == enemy_color(self.color)):
+            return Move((s_x, s_y), (d_x, d_y), CAPTURE)
+
+        return False
+
 class Queen(Piece):
     """The class Queen represents a queen in chess game.
 
     The queen can move any number of vacant squares diagonally, horizontally,
     or vertically.
     """
+    
     def __init__(self, color, board):
         self.color = color
         self.board = board
@@ -532,6 +562,23 @@ class Queen(Piece):
                (s_x, s_y) != (d_x, d_y))
         if(self.let_king_under_attack((s_x, s_y), (d_x, d_y))):
             return False
+
+        if(s_x != d_x or s_y != d_y or abs(float((d_y - s_y))/(d_x - s_x)) !=
+                                                                           1.):
+            return False
+
+        for (i, j) in get_path((s_x, s_y), (d_x, d_y)):
+            if((i, j) in self.board):
+                return False
+
+        if((d_x, d_y) not in self.board):
+            return Move((s_x, s_y), (d_x, d_y), NORMAL_MOVE)
+
+        if(self.board[d_x, d_y].color == enemy_color(self.color)):
+            return Move((s_x, s_y), (d_x, d_y), CAPTURE)
+
+        return False
+
                
 class King(Piece):
     """The class King represents a king in chess game.
@@ -540,6 +587,7 @@ class King(Piece):
     diagonally.
     The king have a special move shared with the rook called castling.
     """
+    
     def __init__(self, color, board, history):
         self.color = color
         self.board = board
@@ -549,9 +597,12 @@ class King(Piece):
     def castling(self, (x, y)):
         """Move the rook to perform a castling while the king is at (x, y).
 
-        It is assumed that king can castling.
+        It is assumed that the player can castling.
         """
 
+    def can_castling(self, (s_x, s_y), (d_x, d_y)):
+        """Return True if the king can castling."""
+        
     def can_move(self, (s_x, s_y), (d_x, d_y)):
         """Say if the king at (s_x, s_y) can go to (d_x, d_y).
 
@@ -564,4 +615,21 @@ class King(Piece):
                (s_x, s_y) != (d_x, d_y))
         if(self.let_king_under_attack((s_x, s_y), (d_x, d_y))):
             return False
-               
+
+        if(self.can_castling((s_x, s_y), (d_x, d_y))):
+            return Move((s_x, s_y), (d_x, d_y), CASTLING)
+
+        if(abs(s_x - d_x) > 1 or abs(s_y - d_y) > 1):
+            return False
+
+        if(who_controls((d_x, d_y), enemy_color(self.color))):
+            return False
+
+        if((d_x, d_y) not in self.board):
+            return Move((s_x, s_y), (d_x, d_y), NORMAL_MOVE)
+        if(self.board[d_x, d_y].color == enemy_color(self.color)):
+            return Move((s_x, s_y), (d_x, d_y), CAPTURE)
+
+        return False
+
+        
