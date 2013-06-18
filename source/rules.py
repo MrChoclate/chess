@@ -9,10 +9,19 @@ from math import copysign
 
 """Constants"""
 BOARD_SIZE = 8
+WHITE_KING_POS = (5, 1)
+BLACK_KING_POS = (5, 8)
+
+KINGSIDE_KING_POS_X = 7
+QUEENSIDE_KING_POS_X = 3
+KINGSIDE_ROOK_POS_X = 6
+QUEENSIDE_ROOK_POS_X = 4
+
 WHITE_PAWN_ROW = 2
 BLACK_PAWN_ROW = 7
 WHITE_PAWN_DIRECTION = 1
 BLACK_PAWN_DIRECTION = -1
+
 CARDINAL_DIRECTION = [(1, 0), (-1, 0), (0, 1), (0, -1)]
 FOUR_DIAGONALS = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
 KNIGHT_MOVES = [(1,2), (2,1), (-1,2), (-2,1), (1,-2), (2,-1), (-1,-2),
@@ -90,6 +99,7 @@ def enemy_color(color):
         return WHITE_COLOR
     sys.exit("Unknown color while looking for the enemy color")
 
+    
 """Classes"""
 class Board():
     """The class Board represents a board as a dict.
@@ -111,8 +121,8 @@ class Board():
         return key in self.dict_
 
     def where_is_king(self, color):
-    """Return the coordinates of the 'color' king."""
-
+        """Return the coordinates of the 'color' king."""
+    
         for (x, y), p in self.dict_.iteritems():
             if(p.get_type == KING and p.color == color):
                 return (x, y)
@@ -209,7 +219,7 @@ class Board():
         e_x, e_y = l[0]
         l = self.who_controls((e_x, e_y), color)
         for (i, j) in l:
-            if(self.dict_[i, j].can_move((i, j), (e_x, e_y)):
+            if(self.dict_[i, j].can_move((i, j), (e_x, e_y))):
                 return False
 
         # Can the player block the check?
@@ -218,7 +228,7 @@ class Board():
         for (i, j) in get_path((x, y), (e_x, e_y)):
             l = self.who_controls((i, j), color)
             for (p_x, p_y) in l:
-                if(self.dict_[p_x, p_y].can_move((p_x, p_y), (i, j)):
+                if(self.dict_[p_x, p_y].can_move((p_x, p_y), (i, j))):
                     return False
         return True
 
@@ -229,7 +239,7 @@ class Board():
         """
 
         assert((x, y) in self.dict_ and self.dict_[x, y].get_type() == PAWN and
-               type_ != PAWN)
+               type_ in [KNIGHT, BISHOP, ROOK, QUEEN])
 
         c, h = self.dict_[x, y].color, self.dict_[x, y].history
         self.dict_[x, y] = Piece(type_, c, self.dict_, h).create()
@@ -285,7 +295,7 @@ class Piece():
         self.board[x, y] = tmp
         return len(l_2) > len(l)
 
-    def let_king_under_attack(self, (s_x, s_y), (d_x, d_y))):
+    def let_king_under_attack(self, (s_x, s_y), (d_x, d_y)):
         """Return True if the piece at (s_x, s_y) can't move at (d_x, d_y)
         because it will let his king in check position."""
 
@@ -379,7 +389,6 @@ class Pawn(Piece):
                (s_x, s_y) != (d_x, d_y))
         if(self.let_king_under_attack((s_x, s_y), (d_x, d_y))):
             return False
-
         
         d = self.get_direction()
 
@@ -401,13 +410,13 @@ class Pawn(Piece):
         # Pawn moves one square diagonally
         if(abs(s_x - d_x) == 1 and (d_y - s_y) ==  d):
             if((d_x, d_y) in self.board and self.board[d_x, d_y].color ==
-                                                       enemy_color(self.color):
+                                                      enemy_color(self.color)):
                 if(d_y == self.get_promotion_row()):
                     return Move((s_x, s_y), (d_x, d_y), CAPTURE_PROMOTION)
                 else:
                     return Move((s_x, s_y), (d_x, d_y), CAPTURE)
             if((d_x, d_y) not in self.board and history.peek() == Move((d_x,
-               d_y + d), (d_x, d_y - d), NORMAL_MOVE):     # 'en passant'
+               d_y + d), (d_x, d_y - d), NORMAL_MOVE)):     # 'en passant'
                 return Move((s_x, s_y), (d_x, d_y), EN_PASSANT)
             else:
                 return False
@@ -472,7 +481,7 @@ class Knight(Piece):
         Return the Move if the knight can, else return False.
         """
 
-       assert(self.board[s_x, s_y].get_type() == self.type_ and
+        assert(self.board[s_x, s_y].get_type() == self.type_ and
                self.board[s_x, s_y].color == self.color and
                (s_x and s_y and d_x and d_y) in range(1, BOARD_SIZE + 1) and
                (s_x, s_y) != (d_x, d_y))
@@ -481,7 +490,7 @@ class Knight(Piece):
 
         if((d_x, d_y) not in self.board):
             return Move((s_x, s_y), (d_x, d_y), NORMAL_MOVE)
-        if(self.board[d_x, d_y].color == enemy_color(self.color):
+        if(self.board[d_x, d_y].color == enemy_color(self.color)):
             return Move((s_x, s_y), (d_x, d_y), CAPTURE)
             
         return False
@@ -504,8 +513,46 @@ class Rook(Piece):
         It assumes that the player can castling.
         """
 
+        assert(y == (1 or BOARD_SIZE) and (x, y) in self.board and
+               self.board[x, y].get_type() == ROOK and
+               self.board[x, y].color == self.color and
+               x == (KINGSIDE_ROOK_POS_X or QUEENSIDE_ROOK_POS_X))
+
+        k_pos = King(self.color).get_initial_pos()
+        assert(k_pos in self.board)
+               
+        if(x == KINGSIDE_ROOK_POS_X):
+            self.board[y, KINGSIDE_KING_POS_X] = self.board[k_pos]
+            del self.board[k_pos]
+
+        if(x == QUEENSIDE_ROOK_POS_X):
+            self.boar[y, QUEENSIDE_KING_POS_X] = self.board[k_pos]
+            del self.board[y, 1]
+
     def can_castling(self, (s_x, s_y), (d_x, d_y)):
-        """Return True if the rook can castling."""
+        """Return True if the rook can castling.
+
+        It uses the can_castling() method of the king.
+        """
+
+        if(self.color == WHITE_COLOR):
+            x, y = WHITE_KING_POS
+        elif(self.color == BLACK_COLOR):
+            x, y = BLACK_KING_POS
+        else:
+            sys.exit("Unknown color while looking for if the rook can castle")
+
+        if((x, y) not in self.board or self.board[x, y].get_type() != KING or
+           self.board[x, y].color != self.color):
+            return False
+
+        if(d_x == KINGSIDE_ROOK_POS_X and d_y == y):
+            return self.board[x, y].can_castling((x, y), (KINGSIDE_KING_POS_X,
+                                                                          d_y))
+        if(d_x == QUEENSIDE_ROOK_POS_X and d_y == y):
+            return self.board[x, y].can_castling((x, y), (QUEENSIDE_KING_POS_X,
+                                                                          d_y))
+        return False
         
     def can_move(self, (s_x, s_y), (d_x, d_y)):
         """Say if the rook at (s_x, s_y) can go to (d_x, d_y).
@@ -588,7 +635,7 @@ class King(Piece):
     The king have a special move shared with the rook called castling.
     """
     
-    def __init__(self, color, board, history):
+    def __init__(self, color, board={}, history=[]):
         self.color = color
         self.board = board
         self.history = history
@@ -600,8 +647,65 @@ class King(Piece):
         It is assumed that the player can castling.
         """
 
+        assert(y == (1 or BOARD_SIZE) and (x, y) in self.board and
+               self.board[x, y].get_type() == KING and
+               self.board[x, y].color == self.color and
+               x == (KINGSIDE_KING_POS_X or QUEENSIDE_KING_POS_X))
+
+        if(x == KINGSIDE_KING_POS_X):
+            assert((y, BOARD_SIZE) in self.board and
+                   (y, KINGSIDE_ROOK_POS_X) not in self.board)
+            
+            self.board[y, KINGSIDE_ROOK_POS_X] = self.board[y, BOARD_SIZE]
+            del self.board[y, BOARD_SIZE]
+
+        if(x == QUEENSIDE_KING_POS_X):
+            assert((y, 1) in self.board and
+                   (y, QUEENSIDE_ROOK_POS_X) not in self.board)
+            
+            self.boar[y, QUEENSIDE_ROOK_POS_X] = self.board[y, 1]
+            del self.board[y, 1]
+
+    def get_initial_pos(self):
+        """Return the initial coordinate of the king."""
+        if(self.color == WHITE_COLOR):
+            return WHITE_KING_POS
+        if(self.color == BLACK_PAWN_DIRECTION):
+            return BLACK_KING_POS
+        sys.exit("Unknown color while looking for the initial king position")
+
     def can_castling(self, (s_x, s_y), (d_x, d_y)):
         """Return True if the king can castling."""
+
+        if(abs(s_x - d_x) != 2 or s_y != d_y or self.board.is_check(self.color)
+           or (s_x, s_y) != self.get_initial_pos()):
+            return False
+
+        # Get the coordinate of the rook
+        y = d_y
+        if(d_x == KINGSIDE_KING_POS_X):
+            x = 1
+        elif(d_x == QUEENSIDE_KING_POS_X):
+            x = BOARD_SIZE
+        else:
+            sys.exit("Unknown castling move")
+        if((x, y) not in self.board or self.board[x, y].get_type != ROOK or
+           self.board[x, y].color != self.color):
+            return False
+        
+        # Did the king or the rook move?
+        for m in history:
+            if(m.src == ((x, y) or (s_x, s_y))):
+                return False
+
+        # Are the squares that the king will pass through, empty and not under
+        # enemy control?
+        for (i, j) in get_path((s_x, s_y), (d_x, d_y)) + (d_x, d_y):
+            if((i, j) in self.board or who_controls((i, j),
+                                                     enemy_color(self.color))):
+                return False
+
+        return True
         
     def can_move(self, (s_x, s_y), (d_x, d_y)):
         """Say if the king at (s_x, s_y) can go to (d_x, d_y).
