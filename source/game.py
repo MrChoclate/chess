@@ -113,7 +113,8 @@ class Game():
         """
 
         # Wrongs parameters
-        if(color not in [WHITE_COLOR, BLACK_COLOR] or (src_x, src_y) ==
+        if(not self.__get_player(color).is_playing() or
+           color not in [WHITE_COLOR, BLACK_COLOR] or (src_x, src_y) ==
            (dest_x, dest_y) or src_x not in range(1, BOARD_SIZE+1) or
            src_y not in range(1, BOARD_SIZE+1) or
            dest_x not in range(1, BOARD_SIZE+1) or
@@ -143,7 +144,10 @@ class Game():
         if(m.type_ == CASTLING):
             self.board[dest_x, dest_y].castling((dest_x, dest_y))
 
-            
+
+        self.__get_player(color).played()
+        self.__get_player(ru.enemy_color(color)).must_play()
+        
         if(m.type_ in [PROMOTION, CAPTURE_PROMOTION]):
             return PROMOTE
 
