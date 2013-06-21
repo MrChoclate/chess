@@ -53,22 +53,23 @@ CAPTURE_PROMOTION
 Move = namedtuple('Move', 'src, dest, type_')
 
 """Functions"""
-def new_board(history):
+def new_board(B, history):
     """Initialize the chessboard which is a dict.
 
-    The parameter history is used to bound the history to the pieces.
+    The parameter history and B is used to bound the history and the class
+    Board to the pieces.
     """
     
     b = {}
 
     for x in xrange(1, BOARD_SIZE+1):
-        b[x, WHITE_PAWN_ROW] = Piece(PAWN, WHITE_COLOR, b, history).create()
-        b[x, BLACK_PAWN_ROW] = Piece(PAWN, BLACK_COLOR, b, history).create()
+        b[x, WHITE_PAWN_ROW] = Piece(PAWN, WHITE_COLOR, B, history).create()
+        b[x, BLACK_PAWN_ROW] = Piece(PAWN, BLACK_COLOR, B, history).create()
 
     for x, type_ in enumerate([ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP,
                                KNIGHT, ROOK], start=1):
-        b[x, 1] = Piece(type_, WHITE_COLOR, b, history).create()
-        b[x, BOARD_SIZE] = Piece(type_, BLACK_COLOR, b, history).create()
+        b[x, 1] = Piece(type_, WHITE_COLOR, B, history).create()
+        b[x, BOARD_SIZE] = Piece(type_, BLACK_COLOR, B, history).create()
 
     return b
     
@@ -108,7 +109,7 @@ class Board():
     """
     
     def __init__(self, history):
-        self.dict_ = new_board(history)
+        self.dict_ = new_board(self, history)
 
     """The class board acts like a dict"""
     def __getitem__(self, key):
@@ -124,7 +125,7 @@ class Board():
         """Return the coordinates of the 'color' king."""
     
         for (x, y), p in self.dict_.iteritems():
-            if(p.get_type == KING and p.color == color):
+            if(p.get_type() == KING and p.color == color):
                 return (x, y)
 
         # Error message
@@ -161,24 +162,26 @@ class Board():
             tmp_x, tmp_y = x + i, y + j
             while((tmp_x, tmp_y) not in self.dict_):
                 tmp_x, tmp_y = tmp_x + i, tmp_y + j
-                if((tmp_x or tmp_y) not in range(1, BOARD_SIZE+1)):
+                if(tmp_x not in range(1, BOARD_SIZE+1) or
+                   tmp_y not in range(1, BOARD_SIZE+1)):
                     break
             else:
                 if(self.dict_[tmp_x, tmp_y].color == color and
-                   self.dict_[tmp_x, tmp_y].get_type == (BISHOP or QUEEN)):
-                       l.append(tmp_x, tmp_y)
+                   self.dict_[tmp_x, tmp_y].get_type() in [BISHOP, QUEEN]):
+                       l.append((tmp_x, tmp_y))
         
         # Is it controlled by a rook/queen?
         for (i, j) in CARDINAL_DIRECTION:
             tmp_x, tmp_y = x + i, y + j
             while((tmp_x, tmp_y) not in self.dict_):
                 tmp_x, tmp_y = tmp_x + i, tmp_y + j
-                if((tmp_x or tmp_y) not in range(1, BOARD_SIZE+1)):
+                if(tmp_x not in range(1, BOARD_SIZE+1) or
+                   tmp_y not in range(1, BOARD_SIZE+1)):
                     break
             else:
                 if(self.dict_[tmp_x, tmp_y].color == color and
-                   self.dict_[tmp_x, tmp_y].get_type == (ROOK or QUEEN)):
-                       l.append(tmp_x, tmp_y)
+                   self.dict_[tmp_x, tmp_y].get_type() in [ROOK, QUEEN]):
+                       l.append((tmp_x, tmp_y))
                        
         # Is it controlled by a king?
         for (i, j) in CARDINAL_DIRECTION + FOUR_DIAGONALS:
@@ -186,6 +189,8 @@ class Board():
             if(pos in self.dict_ and self.dict_[pos].color == color and
                self.dict_[pos].get_type() == KING):
                    l.append(pos)
+
+        return l
         
     def is_check(self, color):
         """Return True if the 'color' king is in check."""
@@ -207,10 +212,12 @@ class Board():
         
         # Can the king move?
         for (i, j) in FOUR_DIAGONALS + CARDINAL_DIRECTION:
-            if((x + i, y + j) not in self.dict_ or
-               self.dict_[x + i, y + j].color == enemy_color(color)):
-                if(not self.who_controls((x, y), enemy_color(color))):
-                    return False
+            if(x + i in range(1, BOARD_SIZE + 1) and
+               y + j in range(1, BOARD_SIZE + 1) and
+               ((x + i, y + j) not in self.dict_ or
+               self.dict_[x + i, y + j].color == enemy_color(color)) and
+               not self.who_controls((x + i, y + j), enemy_color(color))):
+                return False
 
         if(len(l) >= 2):
             return True
@@ -223,7 +230,7 @@ class Board():
                 return False
 
         # Can the player block the check?
-        if(self.dict_[e_x, e_y].get_type == KNIGHT):
+        if(self.dict_[e_x, e_y].get_type() == KNIGHT):
             return True
         for (i, j) in get_path((x, y), (e_x, e_y)):
             l = self.who_controls((i, j), color)
@@ -255,7 +262,7 @@ class Piece():
     def __init__(self, type_, color, board, history):
         self.type_ = type_
         self.color = color
-        self.board = Board(history)
+        self.board = board
         self.history = history
 
     def create(self):
@@ -286,11 +293,12 @@ class Piece():
         the king from being attacked."""
 
         tmp = self.board[x, y]
-        c = tmp.color
-        l = self.who_controls(self.where_is_king(c), enemy_color(c))
+        c, e_c = tmp.color, enemy_color(tmp.color)
+        (k_x, k_y) = self.board.where_is_king(c)
+        l = self.board.who_controls((k_x, k_y), e_c)
 
         del self.board[x, y]
-        l_2 = self.who_controls(self.where_is_king(c), enemy_color(c))
+        l_2 = self.board.who_controls((k_x, k_y), e_c)
 
         self.board[x, y] = tmp
         return len(l_2) > len(l)
@@ -302,25 +310,26 @@ class Piece():
         assert((s_x, s_y) in self.board)
 
         c = self.board[s_x, s_y].color
-        l = self.who_controls(self.where_is_king(c), enemy_color(c))
+        e_c = enemy_color(c)
+        l = self.board.who_controls(self.board.where_is_king(c), e_c)          
 
         if(len(l) >= 2):
             return True
 
         if(len(l) == 1):
-            if((d_x, d_y) == l[0] and not self.board[s_x, s_y].is_pined(s_x,
-                                                                         s_y)):
+            if((d_x, d_y) == l[0] and not self.board[s_x, s_y].is_pined((s_x,
+                                                                        s_y))):
                 return False
             else:
                 return True
 
-        if(not self.board[s_x, s_y].is_pined(s_x, s_y)):
+        if(not self.board[s_x, s_y].is_pined((s_x, s_y))):
             return False
         else:   # Search for the position of the piece who pins (s_x, s_y)
             tmp = self.board[s_x, s_y]
             del self.board[s_x, s_y]
             
-            l = self.who_controls(self.where_is_king(c), enemy_color(c))
+            l = self.board.who_controls(self.board.where_is_king(c), e_c)
             self.board[s_x, s_y] = tmp
             assert(len(l) == 1)
 
@@ -354,7 +363,7 @@ class Pawn(Piece):
         
         if(self.color == WHITE_COLOR):
             return WHITE_PAWN_DIRECTION
-        if(self.color == BLACK_PAWN_DIRECTION):
+        if(self.color == BLACK_COLOR):
             return BLACK_PAWN_DIRECTION
         sys.exit("Unknown color while looking for the direction of the pawn")
 
@@ -363,7 +372,7 @@ class Pawn(Piece):
 
         if(self.color == WHITE_COLOR):
             return WHITE_PAWN_ROW
-        if(self.color == BLACK_PAWN_DIRECTION):
+        if(self.color == BLACK_COLOR):
             return BLACK_PAWN_ROW
         sys.exit("Unknown color while looking for the initial row of pawns")
 
@@ -372,7 +381,7 @@ class Pawn(Piece):
 
         if(self.color == WHITE_COLOR):
             return BOARD_SIZE
-        if(self.color == BLACK_PAWN_DIRECTION):
+        if(self.color == BLACK_COLOR):
             return 1
         sys.exit("Unknown color while looking for the promotion row of pawns")
 
@@ -385,7 +394,10 @@ class Pawn(Piece):
         
         assert(self.board[s_x, s_y].get_type() == self.type_ and
                self.board[s_x, s_y].color == self.color and
-               (s_x and s_y and d_x and d_y) in range(1, BOARD_SIZE + 1) and
+               s_x in range(1, BOARD_SIZE + 1) and
+               s_y in range(1, BOARD_SIZE + 1) and
+               d_x in range(1, BOARD_SIZE + 1) and
+               d_y in range(1, BOARD_SIZE + 1) and
                (s_x, s_y) != (d_x, d_y))
         if(self.let_king_under_attack((s_x, s_y), (d_x, d_y))):
             return False
@@ -415,8 +427,8 @@ class Pawn(Piece):
                     return Move((s_x, s_y), (d_x, d_y), CAPTURE_PROMOTION)
                 else:
                     return Move((s_x, s_y), (d_x, d_y), CAPTURE)
-            if((d_x, d_y) not in self.board and history.peek() == Move((d_x,
-               d_y + d), (d_x, d_y - d), NORMAL_MOVE)):     # 'en passant'
+            if((d_x, d_y) not in self.board and self.history[-1] ==
+               Move((d_x, d_y + d), (d_x, d_y - d), NORMAL_MOVE)):
                 return Move((s_x, s_y), (d_x, d_y), EN_PASSANT)
             else:
                 return False
@@ -441,7 +453,10 @@ class Bishop(Piece):
 
         assert(self.board[s_x, s_y].get_type() == self.type_ and
                self.board[s_x, s_y].color == self.color and
-               (s_x and s_y and d_x and d_y) in range(1, BOARD_SIZE + 1) and
+               s_x in range(1, BOARD_SIZE + 1) and
+               s_y in range(1, BOARD_SIZE + 1) and
+               d_x in range(1, BOARD_SIZE + 1) and
+               d_y in range(1, BOARD_SIZE + 1) and
                (s_x, s_y) != (d_x, d_y))
         if(self.let_king_under_attack((s_x, s_y), (d_x, d_y))):
             return False
@@ -483,7 +498,10 @@ class Knight(Piece):
 
         assert(self.board[s_x, s_y].get_type() == self.type_ and
                self.board[s_x, s_y].color == self.color and
-               (s_x and s_y and d_x and d_y) in range(1, BOARD_SIZE + 1) and
+               s_x in range(1, BOARD_SIZE + 1) and
+               s_y in range(1, BOARD_SIZE + 1) and
+               d_x in range(1, BOARD_SIZE + 1) and
+               d_y in range(1, BOARD_SIZE + 1) and
                (s_x, s_y) != (d_x, d_y))
         if(self.let_king_under_attack((s_x, s_y), (d_x, d_y))):
             return False
@@ -513,21 +531,21 @@ class Rook(Piece):
         It assumes that the player can castling.
         """
 
-        assert(y == (1 or BOARD_SIZE) and (x, y) in self.board and
+        assert(y in [1, BOARD_SIZE] and (x, y) in self.board and
                self.board[x, y].get_type() == ROOK and
                self.board[x, y].color == self.color and
-               x == (KINGSIDE_ROOK_POS_X or QUEENSIDE_ROOK_POS_X))
+               x in [KINGSIDE_ROOK_POS_X, QUEENSIDE_ROOK_POS_X])
 
         k_pos = King(self.color).get_initial_pos()
         assert(k_pos in self.board)
                
         if(x == KINGSIDE_ROOK_POS_X):
-            self.board[y, KINGSIDE_KING_POS_X] = self.board[k_pos]
+            self.board[KINGSIDE_KING_POS_X, y] = self.board[k_pos]
             del self.board[k_pos]
 
         if(x == QUEENSIDE_ROOK_POS_X):
-            self.boar[y, QUEENSIDE_KING_POS_X] = self.board[k_pos]
-            del self.board[y, 1]
+            self.board[QUEENSIDE_KING_POS_X, y] = self.board[k_pos]
+            del self.board[k_pos]
 
     def can_castling(self, (s_x, s_y), (d_x, d_y)):
         """Return True if the rook can castling.
@@ -562,12 +580,15 @@ class Rook(Piece):
 
         assert(self.board[s_x, s_y].get_type() == self.type_ and
                self.board[s_x, s_y].color == self.color and
-               (s_x and s_y and d_x and d_y) in range(1, BOARD_SIZE + 1) and
+               s_x in range(1, BOARD_SIZE + 1) and
+               s_y in range(1, BOARD_SIZE + 1) and
+               d_x in range(1, BOARD_SIZE + 1) and
+               d_y in range(1, BOARD_SIZE + 1) and
                (s_x, s_y) != (d_x, d_y))
         if(self.let_king_under_attack((s_x, s_y), (d_x, d_y))):
             return False
 
-        if(s_x != d_x or s_y != d_y):
+        if(s_x != d_x and s_y != d_y):
             return False
 
         if(self.can_castling((s_x, s_y), (d_x, d_y))):
@@ -605,13 +626,17 @@ class Queen(Piece):
 
         assert(self.board[s_x, s_y].get_type() == self.type_ and
                self.board[s_x, s_y].color == self.color and
-               (s_x and s_y and d_x and d_y) in range(1, BOARD_SIZE + 1) and
+               s_x in range(1, BOARD_SIZE + 1) and
+               s_y in range(1, BOARD_SIZE + 1) and
+               d_x in range(1, BOARD_SIZE + 1) and
+               d_y in range(1, BOARD_SIZE + 1) and
                (s_x, s_y) != (d_x, d_y))
         if(self.let_king_under_attack((s_x, s_y), (d_x, d_y))):
             return False
 
-        if(s_x != d_x or s_y != d_y or abs(float((d_y - s_y))/(d_x - s_x)) !=
+        if(s_x != d_x and s_y != d_y and abs(float((d_y - s_y))/(d_x - s_x)) !=
                                                                            1.):
+
             return False
 
         for (i, j) in get_path((s_x, s_y), (d_x, d_y)):
@@ -647,30 +672,30 @@ class King(Piece):
         It is assumed that the player can castling.
         """
 
-        assert(y == (1 or BOARD_SIZE) and (x, y) in self.board and
+        assert(y in [1, BOARD_SIZE] and (x, y) in self.board and
                self.board[x, y].get_type() == KING and
                self.board[x, y].color == self.color and
-               x == (KINGSIDE_KING_POS_X or QUEENSIDE_KING_POS_X))
+               x in [KINGSIDE_KING_POS_X, QUEENSIDE_KING_POS_X])
 
         if(x == KINGSIDE_KING_POS_X):
-            assert((y, BOARD_SIZE) in self.board and
-                   (y, KINGSIDE_ROOK_POS_X) not in self.board)
+            assert((BOARD_SIZE, y) in self.board and
+                   (KINGSIDE_ROOK_POS_X, y) not in self.board)
             
-            self.board[y, KINGSIDE_ROOK_POS_X] = self.board[y, BOARD_SIZE]
-            del self.board[y, BOARD_SIZE]
+            self.board[KINGSIDE_ROOK_POS_X, y] = self.board[BOARD_SIZE, y]
+            del self.board[BOARD_SIZE, y]
 
         if(x == QUEENSIDE_KING_POS_X):
-            assert((y, 1) in self.board and
-                   (y, QUEENSIDE_ROOK_POS_X) not in self.board)
+            assert((1, y) in self.board and
+                   (QUEENSIDE_ROOK_POS_X, y) not in self.board)
             
-            self.boar[y, QUEENSIDE_ROOK_POS_X] = self.board[y, 1]
-            del self.board[y, 1]
+            self.board[QUEENSIDE_ROOK_POS_X, y] = self.board[1, y]
+            del self.board[1, y]
 
     def get_initial_pos(self):
         """Return the initial coordinate of the king."""
         if(self.color == WHITE_COLOR):
             return WHITE_KING_POS
-        if(self.color == BLACK_PAWN_DIRECTION):
+        if(self.color == BLACK_COLOR):
             return BLACK_KING_POS
         sys.exit("Unknown color while looking for the initial king position")
 
@@ -689,19 +714,19 @@ class King(Piece):
             x = BOARD_SIZE
         else:
             sys.exit("Unknown castling move")
-        if((x, y) not in self.board or self.board[x, y].get_type != ROOK or
+        if((x, y) not in self.board or self.board[x, y].get_type() != ROOK or
            self.board[x, y].color != self.color):
             return False
         
         # Did the king or the rook move?
-        for m in history:
+        for m in self.history:
             if(m.src == ((x, y) or (s_x, s_y))):
                 return False
 
         # Are the squares that the king will pass through, empty and not under
         # enemy control?
-        for (i, j) in get_path((s_x, s_y), (d_x, d_y)) + (d_x, d_y):
-            if((i, j) in self.board or who_controls((i, j),
+        for (i, j) in get_path((s_x, s_y), (d_x, d_y)) + [(d_x, d_y)]:
+            if((i, j) in self.board or self.board.who_controls((i, j),
                                                      enemy_color(self.color))):
                 return False
 
@@ -715,10 +740,11 @@ class King(Piece):
 
         assert(self.board[s_x, s_y].get_type() == self.type_ and
                self.board[s_x, s_y].color == self.color and
-               (s_x and s_y and d_x and d_y) in range(1, BOARD_SIZE + 1) and
+               s_x in range(1, BOARD_SIZE + 1) and
+               s_y in range(1, BOARD_SIZE + 1) and
+               d_x in range(1, BOARD_SIZE + 1) and
+               d_y in range(1, BOARD_SIZE + 1) and
                (s_x, s_y) != (d_x, d_y))
-        if(self.let_king_under_attack((s_x, s_y), (d_x, d_y))):
-            return False
 
         if(self.can_castling((s_x, s_y), (d_x, d_y))):
             return Move((s_x, s_y), (d_x, d_y), CASTLING)
@@ -726,7 +752,7 @@ class King(Piece):
         if(abs(s_x - d_x) > 1 or abs(s_y - d_y) > 1):
             return False
 
-        if(who_controls((d_x, d_y), enemy_color(self.color))):
+        if(self.board.who_controls((d_x, d_y), enemy_color(self.color))):
             return False
 
         if((d_x, d_y) not in self.board):
