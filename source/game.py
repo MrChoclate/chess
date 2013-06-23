@@ -77,6 +77,7 @@ class Game():
 
         self.history = []
         self.undo_history = []
+        self.undo_promotion_history = []
         self.board = ru.Board(self.history);
         self.white_player = Player(WHITE_COLOR)
         self.black_player = Player(BLACK_COLOR)
@@ -98,12 +99,73 @@ class Game():
     def undo(self):
         """Undo the last Move and store it in undo_history."""
 
+        if(len(self.history) == 0):
+            return None # You can't undo if you didn't play.
+        
+        src, dest, t = self.history[-1]
+        self.undo_history.append(self.history.pop())
+        c = self.board[dest].color
+
+        assert(dest in self.board and src not in self.board)
+        self.board[src] = self.board[dest]
+        del self.board[dest]
+
+        if(t in [CAPTURE, CAPTURE_PROMOTION, EN_PASSANT]):
+            assert(len(self.__get_player(c).captured_pieces) != 0)
+            if(t == EN_PASSANT):
+                x, y = dest
+                y -= ru.Pawn(c).get_direction()
+                dest = (x, y)
+            self.board[dest] = self.__get_player(c).captured_pieces.pop()
+
+        if(t in [PROMOTION, CAPTURE_PROMOTION]):
+            self.undo_promotion_history.append(self.board[src])
+            self.board[src] = Pawn(c, self.board, self.history)
+
+        if(t == CASTLING): # There is a second piece to move, which moved from
+            x, y = dest    # the src to the dest which are calculated here.
+            if(x == ru.KINGSIDE_KING_POS_X):
+                dest = (x - 1, y)
+                src = (BOARD_SIZE, y)
+            elif(x == ru.QUEENSIDE_KING_POS_X):
+                dest = (x + 1, y)
+                src = (1, y)
+            elif(x == ru.KINGSIDE_ROOK_POS_X):
+                dest = (x + 1, y)
+                src = ru.King(c).get_initial_pos()
+            elif(x == ru.QUEENSIDE_ROOK_POS_X):
+                dest = (x - 1, y)
+                src = ru.King(c).get_initial_pos()
+            else:
+                sys.exit("Unknown x position while undo a castling")
+
+            assert(dest in self.board)
+            self.board[src] = self.board[dest]
+            del self.board[dest]
+
+        self.__get_player(c).must_play()
+        self.__get_player(ru.enemy_color(c)).played()
+
     def redo(self):
         """Redo the last undone Move."""
 
-    def move(self, color, (src_x, src_y), (dest_x, dest_y)):
+        if(len(self.undo_history) == 0):
+            return None
+
+        src, dest, t = self.undo_history[-1]
+        self.history.append(self.undo_history.pop())
+
+        m_type = self.move(self.board[src].color, src, dest, player_move=False)
+        assert(m_type != INVALID_MOVE)
+        if(t in [PROMOTION, CAPTURE_PROMOTION]):
+            self.board[dest] = self.undo_promotion_history.pop()
+        
+    def move(self, color, (src_x, src_y), (dest_x, dest_y), player_move=True):
         """Move the 'color' piece from (src_x, src_y) to (dest_x, dest_y).
 
+        The player_move parameter is use to know if the move is play by a
+        player or if it's an automatic move of the redo method.
+        
         If the move or the parameters are invalid, it return INVALID_MOVE.
         If the move is valid, it can return:
         VALID_MOVE if the piece moved.
@@ -147,12 +209,17 @@ class Game():
 
         self.__get_player(color).played()
         self.__get_player(ru.enemy_color(color)).must_play()
+
+        if(player_move):            # This is for not clear the history while
+            self.undo_history = []  # using the redo method.
+            self.undo_promotion_history = []
         
         if(m.type_ in [PROMOTION, CAPTURE_PROMOTION]):
             return PROMOTE
 
         if(self.board.is_check(ru.enemy_color(color))):
             if(self.board.is_check_mate(ru.enemy_color(color))):
+                self.__get_player(ru.enemy_color(color)).played()
                 return CHECK_MATE
             return CHECK
 

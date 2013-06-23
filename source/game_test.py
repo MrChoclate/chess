@@ -2,6 +2,7 @@
 
 For now, the main goal is to play several games."""
 
+from copy import deepcopy
 import unittest
 import game
 
@@ -181,6 +182,25 @@ class PlayRecordedGames(unittest.TestCase):
 
         self.assertEqual(self.g.move(W, (1, 5), (2, 6)), V) # 3. axb6
         self.assertNotIn((2, 5), self.g.board) # The piece has been taken
+
+    def test_undo_redo(self):
+        """Test the undo and redo methods"""
+
+        self.test_game_1()
+        save = self.g.get_board().copy()
+        for i in xrange(87):
+            self.g.undo()
+        # Verify the undo method.
+        b_ini = game.Game().get_board()
+        b = self.g.get_board()
+        for key, value in b_ini.iteritems():
+            self.assertIn(key, b)
+            self.assertEqual(value.color, b[key].color)
+            self.assertEqual(value.get_type(), b[key].get_type())
+
+        for i in xrange(87):
+            self.g.redo()
+        self.assertEqual(self.g.get_board(), save)
         
             
 if __name__ == '__main__':
