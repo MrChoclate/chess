@@ -225,3 +225,10 @@ class Game():
 
         return VALID_MOVE
 
+    def promote(self, (x, y), type_):
+        """Transform the pawn at (x, y) into type_.
+
+        type_ must be different of PAWN.
+        """
+
+        self.board.promote((x, y), type_)
