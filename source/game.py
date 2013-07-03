@@ -153,9 +153,9 @@ class Game():
             return None
 
         src, dest, t = self.undo_history[-1]
-        self.history.append(self.undo_history.pop())
 
         m_type = self.move(self.board[src].color, src, dest, player_move=False)
+        self.history.append(self.undo_history.pop())
         assert(m_type != INVALID_MOVE)
         if(t in [PROMOTION, CAPTURE_PROMOTION]):
             self.board[dest] = self.undo_promotion_history.pop()
@@ -198,7 +198,10 @@ class Game():
             self.__get_player(color).captured_pieces.append(self.board[dest_x,
                                                                        dest_y])
         if(m.type_ == EN_PASSANT):
-            del self.board[dest_x, dest_y - ru.Pawn(color).get_direction()]
+            y = dest_y - ru.Pawn(color).get_direction()
+            self.__get_player(color).captured_pieces.append(self.board[dest_x,
+                                                                            y])
+            del self.board[dest_x,y]
                                                                   
         self.board[dest_x, dest_y] = self.board[src_x, src_y]
         del self.board[src_x, src_y]
