@@ -389,7 +389,7 @@ class Pawn(Piece):
         """Say if the pawn at (s_x, s_y) can go to (d_x, d_y).
 
         Pawn have two special moves called 'en passant' and promotion.
-        Return the Move if the pawn can, else return False.
+        Return the Move if the pawn can, else return None.
         """
         
         assert(self.board[s_x, s_y].get_type() == self.type_ and
@@ -400,7 +400,7 @@ class Pawn(Piece):
                d_y in range(1, BOARD_SIZE + 1) and
                (s_x, s_y) != (d_x, d_y))
         if(self.let_king_under_attack((s_x, s_y), (d_x, d_y))):
-            return False
+            return None
         
         d = self.get_direction()
 
@@ -410,7 +410,7 @@ class Pawn(Piece):
             if (d_x, d_y) not in self.board and (d_x, d_y-d) not in self.board:
                 return Move((s_x, s_y), (d_x, d_y), NORMAL_MOVE)
             else:
-                return False
+                return None
 
         # Pawn moves one square forward
         if(s_x == d_x and (d_y - s_y) ==  d and (d_x, d_y) not in self.board):
@@ -431,8 +431,8 @@ class Pawn(Piece):
                Move((d_x, d_y + d), (d_x, d_y - d), NORMAL_MOVE)):
                 return Move((s_x, s_y), (d_x, d_y), EN_PASSANT)
             else:
-                return False
-        return False
+                return None
+        return None
 
 class Bishop(Piece):
     """The class Bishop represents a bishop in chess Game.
@@ -448,7 +448,7 @@ class Bishop(Piece):
     def can_move(self, (s_x, s_y), (d_x, d_y)):
         """Say if the bishop at (s_x, s_y) can go to (d_x, d_y).
 
-        Return the Move if the bishop can, else return False.
+        Return the Move if the bishop can, else return None.
         """
 
         assert(self.board[s_x, s_y].get_type() == self.type_ and
@@ -459,14 +459,14 @@ class Bishop(Piece):
                d_y in range(1, BOARD_SIZE + 1) and
                (s_x, s_y) != (d_x, d_y))
         if(self.let_king_under_attack((s_x, s_y), (d_x, d_y))):
-            return False
+            return None
 
         if(abs(float((d_y - s_y))/(d_x - s_x)) != 1.):
-            return False
+            return None
 
         for (i, j) in get_path((s_x, s_y), (d_x, d_y)):
             if((i, j) in self.board):
-                return False
+                return None
 
         if((d_x, d_y) not in self.board):
             return Move((s_x, s_y), (d_x, d_y), NORMAL_MOVE)
@@ -474,7 +474,7 @@ class Bishop(Piece):
         if(self.board[d_x, d_y].color == enemy_color(self.color)):
             return Move((s_x, s_y), (d_x, d_y), CAPTURE)
 
-        return False
+        return None
             
         
 class Knight(Piece):
@@ -493,7 +493,7 @@ class Knight(Piece):
     def can_move(self, (s_x, s_y), (d_x, d_y)):
         """Say if the knight at (s_x, s_y) can go to (d_x, d_y).
 
-        Return the Move if the knight can, else return False.
+        Return the Move if the knight can, else return None.
         """
 
         assert(self.board[s_x, s_y].get_type() == self.type_ and
@@ -504,14 +504,14 @@ class Knight(Piece):
                d_y in range(1, BOARD_SIZE + 1) and
                (s_x, s_y) != (d_x, d_y))
         if(self.let_king_under_attack((s_x, s_y), (d_x, d_y))):
-            return False
+            return None
 
         if((d_x, d_y) not in self.board):
             return Move((s_x, s_y), (d_x, d_y), NORMAL_MOVE)
         if(self.board[d_x, d_y].color == enemy_color(self.color)):
             return Move((s_x, s_y), (d_x, d_y), CAPTURE)
             
-        return False
+        return None
 
 class Rook(Piece):
     """The class Rook represents a rook in chess game.
@@ -575,7 +575,7 @@ class Rook(Piece):
     def can_move(self, (s_x, s_y), (d_x, d_y)):
         """Say if the rook at (s_x, s_y) can go to (d_x, d_y).
 
-        Return the Move if the rook can, else return False.
+        Return the Move if the rook can, else return None.
         """
 
         assert(self.board[s_x, s_y].get_type() == self.type_ and
@@ -586,17 +586,17 @@ class Rook(Piece):
                d_y in range(1, BOARD_SIZE + 1) and
                (s_x, s_y) != (d_x, d_y))
         if(self.let_king_under_attack((s_x, s_y), (d_x, d_y))):
-            return False
+            return None
 
         if(s_x != d_x and s_y != d_y):
-            return False
+            return None
 
         if(self.can_castling((s_x, s_y), (d_x, d_y))):
             return Move((s_x, s_y), (d_x, d_y), CASTLING)
             
         for (i, j) in get_path((s_x, s_y), (d_x, d_y)):
             if((i, j) in self.board):
-                return False
+                return None
 
         if((d_x, d_y) not in self.board):
             return Move((s_x, s_y), (d_x, d_y), NORMAL_MOVE)
@@ -604,7 +604,7 @@ class Rook(Piece):
         if(self.board[d_x, d_y].color == enemy_color(self.color)):
             return Move((s_x, s_y), (d_x, d_y), CAPTURE)
 
-        return False
+        return None
 
 class Queen(Piece):
     """The class Queen represents a queen in chess game.
@@ -621,7 +621,7 @@ class Queen(Piece):
     def can_move(self, (s_x, s_y), (d_x, d_y)):
         """Say if the queen at (s_x, s_y) can go to (d_x, d_y).
 
-        Return the Move if the queen can, else return False.
+        Return the Move if the queen can, else return None.
         """
 
         assert(self.board[s_x, s_y].get_type() == self.type_ and
@@ -632,16 +632,16 @@ class Queen(Piece):
                d_y in range(1, BOARD_SIZE + 1) and
                (s_x, s_y) != (d_x, d_y))
         if(self.let_king_under_attack((s_x, s_y), (d_x, d_y))):
-            return False
+            return None
 
         if(s_x != d_x and s_y != d_y and abs(float((d_y - s_y))/(d_x - s_x)) !=
                                                                            1.):
 
-            return False
+            return None
 
         for (i, j) in get_path((s_x, s_y), (d_x, d_y)):
             if((i, j) in self.board):
-                return False
+                return None
 
         if((d_x, d_y) not in self.board):
             return Move((s_x, s_y), (d_x, d_y), NORMAL_MOVE)
@@ -649,7 +649,7 @@ class Queen(Piece):
         if(self.board[d_x, d_y].color == enemy_color(self.color)):
             return Move((s_x, s_y), (d_x, d_y), CAPTURE)
 
-        return False
+        return None
 
                
 class King(Piece):
@@ -735,7 +735,7 @@ class King(Piece):
     def can_move(self, (s_x, s_y), (d_x, d_y)):
         """Say if the king at (s_x, s_y) can go to (d_x, d_y).
 
-        Return the Move if the king can, else return False.
+        Return the Move if the king can, else return None.
         """
 
         assert(self.board[s_x, s_y].get_type() == self.type_ and
@@ -750,16 +750,16 @@ class King(Piece):
             return Move((s_x, s_y), (d_x, d_y), CASTLING)
 
         if(abs(s_x - d_x) > 1 or abs(s_y - d_y) > 1):
-            return False
+            return None
 
         if(self.board.who_controls((d_x, d_y), enemy_color(self.color))):
-            return False
+            return None
 
         if((d_x, d_y) not in self.board):
             return Move((s_x, s_y), (d_x, d_y), NORMAL_MOVE)
         if(self.board[d_x, d_y].color == enemy_color(self.color)):
             return Move((s_x, s_y), (d_x, d_y), CAPTURE)
 
-        return False
+        return None
 
         

@@ -188,7 +188,7 @@ class Game():
             
         m = self.board[src_x, src_y].can_move((src_x, src_y), (dest_x, dest_y))
 
-        if(type(m) == bool and m == False):
+        if(m is None):
             return INVALID_MOVE
         assert(type(m) == ru.Move)
 
