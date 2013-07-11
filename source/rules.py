@@ -239,6 +239,20 @@ class Board():
                     return False
         return True
 
+    def is_pat(self, color):
+        """Return True if 'color' can't play any moves."""
+
+        row = col = range(1, BOARD_SIZE + 1)
+        # NAIF METHOD, should be fix !
+        for (x, y), p in self.dict_.iteritems():
+            if(p.color == color):
+                l = [(i, j) for i in row for j in col if i != x or j != y]
+                for (i, j) in l:
+                    if(p.can_move((x, y), (i, j))):
+                        return False
+
+        return True
+        
     def promote(self, (x, y), type_):
         """Transform the pawn at (x, y) into type_.
 
@@ -461,7 +475,7 @@ class Bishop(Piece):
         if(self.let_king_under_attack((s_x, s_y), (d_x, d_y))):
             return None
 
-        if(abs(float((d_y - s_y))/(d_x - s_x)) != 1.):
+        if(d_x == s_x or abs(float((d_y - s_y))/(d_x - s_x)) != 1.):
             return None
 
         for (i, j) in get_path((s_x, s_y), (d_x, d_y)):

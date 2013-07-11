@@ -28,8 +28,9 @@ INVALID_MOVE,
 VALID_MOVE,
 PROMOTE,
 CHECK,
-CHECK_MATE
-) = range(5)
+CHECK_MATE,
+PAT
+) = range(6)
 
 class Player():
     """The class player is used to know data about the player.
@@ -172,6 +173,7 @@ class Game():
         PROMOTE if there is a pawn to promote.
         CHECK if now the ennemy of 'color' is in check.
         CHECK mate if 'color' won the game.
+        PAT if the next player can't play.
         """
 
         # Wrongs parameters
@@ -226,6 +228,9 @@ class Game():
                 return CHECK_MATE
             return CHECK
 
+        #if(self.board.is_pat(ru.enemy_color(color))):
+         #   return PAT
+            
         return VALID_MOVE
 
     def promote(self, (x, y), type_):
